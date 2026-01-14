@@ -1,0 +1,1 @@
+AUDIO_DATASET_PATH = r"D:/genre music dataset/genres_original"
