@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -6,8 +8,8 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 
 
-DATA_PATH = "../data/features_extended.csv"
-OUTPUT_PATH = "../data/features_extended_scaled.csv"
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+DATA_PATH = PROJECT_ROOT / "data" / "features_extended.csv"
 
 sns.set_theme(style="whitegrid")
 plt.rcParams["figure.figsize"] = (9, 5)
@@ -123,15 +125,6 @@ plt.xlabel("Principal Component 1 [-]")
 plt.ylabel("Principal Component 2 [-]")
 plt.tight_layout()
 plt.show()
-
-scaler = StandardScaler()
-scaled = scaler.fit_transform(df.drop(columns="genre"))
-
-df_scaled = pd.DataFrame(scaled, columns=df.drop(columns="genre").columns)
-df_scaled["genre"] = df["genre"]
-
-df_scaled.to_csv(OUTPUT_PATH, index=False)
-print(f"\n Scaled data saved to {OUTPUT_PATH}")
 
 
 

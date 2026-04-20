@@ -1,9 +1,13 @@
 import os
+from pathlib import Path
+
 import librosa
 import numpy as np
 import pandas as pd
 
 from config import AUDIO_DATASET_PATH
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 FEATURES = ([
     "tempo",
@@ -79,7 +83,7 @@ def main():
                     print(f"Error {file_path}: {e}")
 
     df = pd.DataFrame(rows)
-    df.to_csv("../data/features_extended.csv", index=False)
+    df.to_csv(PROJECT_ROOT / "data" / "features_extended.csv", index=False)
     print("done!")
 
 if __name__ == "__main__":
