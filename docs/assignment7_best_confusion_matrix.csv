@@ -1,0 +1,11 @@
+,blues,classical,country,disco,hiphop,jazz,metal,pop,reggae,rock
+blues,18,0,0,0,0,0,2,0,0,0
+classical,0,20,0,0,0,0,0,0,0,0
+country,2,0,11,2,0,1,0,1,1,2
+disco,0,0,1,10,3,0,0,2,2,2
+hiphop,0,0,0,0,11,0,0,4,4,1
+jazz,0,2,0,0,0,17,0,0,0,1
+metal,0,0,0,0,0,0,15,0,0,3
+pop,0,0,0,2,0,0,0,15,2,1
+reggae,0,0,2,0,1,1,0,2,12,2
+rock,1,1,5,2,0,0,2,0,1,8
