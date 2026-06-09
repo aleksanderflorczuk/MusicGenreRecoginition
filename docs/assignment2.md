@@ -23,7 +23,7 @@ The purpose of this review is therefore not to identify the highest published GT
 
 ## A. Search Strategy and Source Selection
 
-### A.1. Databases and Repositories
+### Databases and Repositories
 
 The search covered sources indexed or published through:
 
@@ -38,7 +38,7 @@ The search covered sources indexed or published through:
 
 Searches were conducted for publications available up to June 2026. The main scientific literature was concentrated in the period 2002-2019 because this interval covers the introduction of the GTZAN benchmark, the development of classical feature-based systems, the transition toward learned representations, and major methodological criticism of conventional MGR evaluation. Newer publications were screened where relevant, but topical recency alone was not treated as a selection criterion.
 
-### A.2. Keywords and Search Queries
+### Keywords and Search Queries
 
 The principal search strings were:
 
@@ -57,7 +57,7 @@ FMA AND genre recognition AND benchmark
 
 Backward reference searching was applied to the selected survey and evaluation papers. Forward searching was used for the foundational GTZAN paper and for publications that questioned the validity of standard evaluation practice.
 
-### A.3. Inclusion Criteria
+### Inclusion Criteria
 
 A source was included when it satisfied at least one of the following conditions:
 
@@ -69,7 +69,7 @@ A source was included when it satisfied at least one of the following conditions
 
 Scientific papers had to be peer-reviewed journal or conference publications. An arXiv version was accepted as an access route when the work was also published in a recognized venue. One additional non-peer-reviewed GTZAN analysis was retained only as supplementary methodological evidence and was not counted toward the required minimum of peer-reviewed papers. Benchmark reports were accepted when produced by established initiatives such as MIREX, MediaEval, or the FMA challenge.
 
-### A.4. Exclusion Criteria
+### Exclusion Criteria
 
 The review excluded:
 
@@ -80,7 +80,7 @@ The review excluded:
 - results based only on private datasets when they offered no transferable methodological insight;
 - claims of very high accuracy that could not be interpreted because the split or leakage controls were unspecified.
 
-### A.5. Time Range and Final Source Scope
+### Time Range and Final Source Scope
 
 The search considered sources published from 2002 to June 2026. The final core set contains eight peer-reviewed scientific papers and three distinct benchmark reports: MIREX, the FMA Challenge, and MediaEval. The peer-reviewed FMA paper additionally provides dataset documentation. One non-peer-reviewed GTZAN analysis was retained as supplementary methodological evidence because it directly documents dataset faults relevant to the thesis protocol. The selection therefore exceeds the minimum requirement of five scientific papers and meets the requirement of three benchmark reports. It emphasizes methodological relevance to a small, feature-based classification experiment rather than superficial similarity in title.
 
@@ -94,7 +94,7 @@ The search considered sources published from 2002 to June 2026. The final core s
 
 ## B. Thematic Organization and Synthesis of Literature
 
-### B.1. Engineered Audio Descriptors and Classical Classifiers
+### Engineered Audio Descriptors and Classical Classifiers
 
 The foundational approach represents each recording through manually designed descriptors of timbre, rhythm, and pitch. Tzanetakis and Cook [1] combined timbral texture, rhythmic content, and pitch content features and reported 61% accuracy on the ten-class dataset later known as GTZAN. The importance of this work is not its present-day score, but its formulation of MGR as supervised classification from audio content.
 
@@ -106,7 +106,7 @@ These studies establish a pattern relevant to the thesis: representation quality
 
 SVM appears repeatedly because it is suitable for medium-dimensional representations and relatively small datasets. An RBF kernel can model non-linear class boundaries while remaining less data-demanding than a deep neural network trained from scratch. This provides a methodological basis for selecting RBF SVM as the thesis's primary model. At the same time, literature does not justify evaluating SVM in isolation. Linear, tree-based, ensemble, and naive baselines are necessary to determine whether any gain results from meaningful non-linearity rather than from an inadequately chosen reference.
 
-### B.2. Learned Representations and Transfer Learning
+### Learned Representations and Transfer Learning
 
 Deep learning shifted attention from hand-crafted descriptors toward representations learned from spectrograms or waveforms. Choi et al. [4] trained a convolutional network on a large music-tagging source task and transferred intermediate activations to six target tasks. On GTZAN, the transferred convolutional representation achieved 89.8% accuracy, compared with 66.0% for their MFCC baseline. The result demonstrates that a representation learned from a larger external corpus can encode information not captured by conventional MFCC aggregation.
 
@@ -116,7 +116,7 @@ FMA was created partly in response to the limited size and accessibility of earl
 
 For a small engineering project, however, a controlled classical pipeline remains defensible. It permits transparent preprocessing, feasible hyperparameter search, explicit baseline comparison, and feature-level interpretation. Its purpose should be framed as evaluating the capability and limitations of engineered descriptors, not competing directly with large-scale pre-trained systems.
 
-### B.3. Dataset Scale, Augmentation, and Overfitting
+### Dataset Scale, Augmentation, and Overfitting
 
 Dataset size is a recurring methodological constraint. GTZAN contains only 1,000 excerpts, with 100 examples per class. This is convenient for reproducible teaching and small experiments, but it is insufficient for strong claims about the diversity of complete musical genres. The number of recordings is especially restrictive when model selection, feature selection, and hyperparameter tuning are performed on the same limited development data.
 
@@ -126,7 +126,7 @@ This distinction matters for the thesis. Splitting every recording into many cor
 
 The literature also supports examining the train-validation gap and learning curves rather than reporting test accuracy alone. High training performance combined with materially lower cross-validation performance indicates that additional model capacity is fitting dataset-specific detail. In a small feature table, this risk applies both to flexible ensembles and to a tuned RBF SVM.
 
-### B.4. Evaluation Methodology, Dataset Faults, and Confounding
+### Evaluation Methodology, Dataset Faults, and Confounding
 
 Evaluation methodology is the most important critical theme in the selected literature. Sturm [5] argues that accuracy, precision, recall, and confusion matrices do not by themselves prove that an MGR system recognizes genre. A classifier may exploit non-musical or irrelevant regularities while still producing a high score. This criticism changes the interpretation of benchmark results: accuracy measures label prediction under a defined protocol, not general human-like understanding of genre.
 
@@ -171,7 +171,7 @@ The table demonstrates why numerical results cannot be compared as if they came 
 
 ## D. Critical Analysis and Research Gap Identification
 
-### D.1. What Remains Insufficiently Addressed?
+### What Remains Insufficiently Addressed?
 
 Three limitations recur across the literature.
 
@@ -181,7 +181,7 @@ Second, GTZAN-based work often reports results under incompatible or insufficien
 
 Third, aggregate accuracy dominates reporting even though genre classes overlap and class-specific behavior is uneven. Rock, country, disco, pop, and reggae frequently share timbral, rhythmic, or production characteristics. A model can achieve acceptable overall accuracy while remaining systematically weak for these classes.
 
-### D.2. Where Do Existing Methods Fail or Underperform?
+### Where Do Existing Methods Fail or Underperform?
 
 Global engineered descriptors underperform when genre identity depends on temporal development, groove, arrangement, or local instrumentation changes. Means and standard deviations remove the order of events. This can make two recordings with different musical structures appear similar if their global spectral distributions are alike.
 
@@ -189,7 +189,7 @@ Complex learned representations reduce this limitation but require more data and
 
 Existing evaluations also fail to establish broad generalization when they use one collection and random track-level splits. Without artist-independent or cross-dataset testing, the result applies only to the sampled distribution. This thesis must therefore state that its findings concern the selected dataset and representation.
 
-### D.3. What Methodological Weakness Justifies the Proposed Approach?
+### What Methodological Weakness Justifies the Proposed Approach?
 
 The identified gap is not the absence of music genre classifiers. The problem has many proposed solutions. The defensible engineering gap is the need for a transparent, reproducible assessment of how far a compact set of global audio descriptors can support ten-class genre classification when:
 
