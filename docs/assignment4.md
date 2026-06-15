@@ -30,7 +30,7 @@ The source code is divided according to pipeline responsibility:
 | `src/target_model.py` | RBF SVM optimization, feature-selection variant, and comparative evaluation |
 | `src/results_analysis.py` | Consolidated results, class-level errors, permutation importance, and stability analysis |
 
-The older `train.py`, `train_classifier.py`, and `experiment_best_accuracy.py` scripts are treated as historical exploratory scripts and are excluded from the final reproducibility workflow. This distinction is stated explicitly in the README.
+The older `train.py` and `train_classifier.py` scripts are treated as historical exploratory scripts and are excluded from the final reproducibility workflow. This distinction is stated explicitly in the README.
 
 Repository paths are resolved relative to the project root. The raw audio path is no longer embedded in the implementation. It is supplied through the `AUDIO_DATASET_PATH` environment variable. The canonical feature table remains `data/features_extended.csv`, and generated experimental outputs retain their established names in `docs/`.
 

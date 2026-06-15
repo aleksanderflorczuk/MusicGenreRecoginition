@@ -32,9 +32,8 @@ The reproducible workflow uses:
 - `src/target_model.py` for RBF SVM optimization;
 - `src/results_analysis.py` for final analytical tables.
 
-The older `train.py`, `train_classifier.py`, and
-`experiment_best_accuracy.py` scripts are exploratory and are not part of the
-final reproducibility protocol.
+The older `train.py` and `train_classifier.py` scripts are exploratory and are
+not part of the final reproducibility protocol.
 
 ## Environment
 
