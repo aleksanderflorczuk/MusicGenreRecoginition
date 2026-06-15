@@ -1,4 +1,4 @@
-from pathlib import Path
+import argparse
 
 import pandas as pd
 from sklearn.dummy import DummyClassifier
@@ -18,16 +18,13 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeClassifier
 
-
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DATA_PATH = PROJECT_ROOT / "data" / "features_extended.csv"
-RESULTS_PATH = PROJECT_ROOT / "docs" / "assignment7_baseline_results.csv"
-REPORTS_PATH = PROJECT_ROOT / "docs" / "assignment7_classification_reports.csv"
-CONFUSION_MATRIX_PATH = PROJECT_ROOT / "docs" / "assignment7_best_confusion_matrix.csv"
-
-RANDOM_STATE = 30
-TEST_SIZE = 0.2
-CV_SPLITS = 5
+from project_config import (
+    add_config_argument,
+    load_clean_dataset,
+    load_config,
+    output_path,
+    write_experiment_manifest,
+)
 
 SCORING = {
     "accuracy": "accuracy",
@@ -37,23 +34,13 @@ SCORING = {
 }
 
 
-def load_dataset():
-    df = pd.read_csv(DATA_PATH)
-
-    duplicate_count = int(df.duplicated().sum())
-    if duplicate_count:
-        df = df.drop_duplicates().reset_index(drop=True)
-
-    missing_count = int(df.isna().sum().sum())
-    if missing_count:
-        raise ValueError(f"Dataset contains missing values: {missing_count}")
-
-    X = df.drop(columns="genre")
-    y = df["genre"]
-    return X, y, duplicate_count
+def parse_args():
+    parser = argparse.ArgumentParser(description="Run baseline model experiments.")
+    add_config_argument(parser)
+    return parser.parse_args()
 
 
-def build_default_models():
+def build_default_models(random_seed, n_jobs):
     return {
         "dummy_most_frequent_default": Pipeline(
             [
@@ -64,81 +51,74 @@ def build_default_models():
         "logistic_regression_default": Pipeline(
             [
                 ("scaler", StandardScaler()),
-                ("model", LogisticRegression(max_iter=5000, random_state=RANDOM_STATE)),
+                ("model", LogisticRegression(max_iter=5000, random_state=random_seed)),
             ]
         ),
         "decision_tree_default": Pipeline(
             [
                 ("scaler", StandardScaler()),
-                ("model", DecisionTreeClassifier(random_state=RANDOM_STATE)),
+                ("model", DecisionTreeClassifier(random_state=random_seed)),
             ]
         ),
         "random_forest_default": Pipeline(
             [
                 ("scaler", StandardScaler()),
-                ("model", RandomForestClassifier(random_state=RANDOM_STATE, n_jobs=-1)),
+                ("model", RandomForestClassifier(random_state=random_seed, n_jobs=n_jobs)),
             ]
         ),
         "gradient_boosting_default": Pipeline(
             [
                 ("scaler", StandardScaler()),
-                ("model", GradientBoostingClassifier(random_state=RANDOM_STATE)),
+                ("model", GradientBoostingClassifier(random_state=random_seed)),
             ]
         ),
     }
 
 
-def build_tuned_models():
+def prefixed_grid(parameters):
+    return {f"model__{name}": values for name, values in parameters.items()}
+
+
+def build_tuned_models(config):
+    random_seed = config["random_seed"]
+    n_jobs = config["n_jobs"]
+    model_config = config["baseline_models"]
     return {
         "logistic_regression_tuned": {
             "pipeline": Pipeline(
                 [
                     ("scaler", StandardScaler()),
-                    ("model", LogisticRegression(max_iter=5000, random_state=RANDOM_STATE)),
+                    ("model", LogisticRegression(max_iter=5000, random_state=random_seed)),
                 ]
             ),
-            "params": {
-                "model__C": [0.1, 1.0, 10.0],
-                "model__solver": ["lbfgs"],
-            },
+            "params": prefixed_grid(model_config["logistic_regression"]),
         },
         "decision_tree_tuned": {
             "pipeline": Pipeline(
                 [
                     ("scaler", StandardScaler()),
-                    ("model", DecisionTreeClassifier(random_state=RANDOM_STATE)),
+                    ("model", DecisionTreeClassifier(random_state=random_seed)),
                 ]
             ),
-            "params": {
-                "model__max_depth": [5, 10, None],
-                "model__min_samples_leaf": [1, 3, 5],
-            },
+            "params": prefixed_grid(model_config["decision_tree"]),
         },
         "random_forest_tuned": {
             "pipeline": Pipeline(
                 [
                     ("scaler", StandardScaler()),
-                    ("model", RandomForestClassifier(random_state=RANDOM_STATE, n_jobs=-1)),
+                    ("model", RandomForestClassifier(random_state=random_seed, n_jobs=n_jobs)),
                 ]
             ),
-            "params": {
-                "model__n_estimators": [200, 500],
-                "model__max_depth": [None, 15],
-                "model__max_features": ["sqrt", "log2"],
-            },
+            "params": prefixed_grid(model_config["random_forest"]),
         },
         "gradient_boosting_tuned": {
             "pipeline": Pipeline(
                 [
                     ("scaler", StandardScaler()),
-                    ("model", GradientBoostingClassifier(random_state=RANDOM_STATE)),
+                    ("model", GradientBoostingClassifier(random_state=random_seed)),
                 ]
             ),
-            "params": {
-                "model__n_estimators": [100, 200],
-                "model__learning_rate": [0.05, 0.1],
-                "model__max_depth": [2, 3],
-            },
+            "params": prefixed_grid(model_config["gradient_boosting"]),
         },
     }
 
@@ -152,8 +132,19 @@ def summarize_cv_scores(cv_scores):
     return summary
 
 
-def evaluate_estimator(name, estimator, X_train, X_test, y_train, y_test, cv, config_type, best_params=None):
-    cv_scores = cross_validate(estimator, X_train, y_train, cv=cv, scoring=SCORING, n_jobs=-1)
+def evaluate_estimator(
+    name,
+    estimator,
+    X_train,
+    X_test,
+    y_train,
+    y_test,
+    cv,
+    n_jobs,
+    config_type,
+    best_params=None,
+):
+    cv_scores = cross_validate(estimator, X_train, y_train, cv=cv, scoring=SCORING, n_jobs=n_jobs)
     estimator.fit(X_train, y_train)
     predictions = estimator.predict(X_test)
 
@@ -171,27 +162,35 @@ def evaluate_estimator(name, estimator, X_train, X_test, y_train, y_test, cv, co
 
 
 def main():
-    X, y, duplicate_count = load_dataset()
+    args = parse_args()
+    config = load_config(args.config)
+    random_seed = config["random_seed"]
+    n_jobs = config["n_jobs"]
+    X, y, duplicate_count = load_clean_dataset(config)
     print(f"Dataset after duplicate removal: {X.shape[0]} rows, {X.shape[1]} features")
     print(f"Removed exact duplicate rows: {duplicate_count}")
 
     X_train, X_test, y_train, y_test = train_test_split(
         X,
         y,
-        test_size=TEST_SIZE,
+        test_size=config["test_size"],
         stratify=y,
-        random_state=RANDOM_STATE,
+        random_state=random_seed,
     )
-    cv = StratifiedKFold(n_splits=CV_SPLITS, shuffle=True, random_state=RANDOM_STATE)
+    cv = StratifiedKFold(
+        n_splits=config["cv_splits"],
+        shuffle=True,
+        random_state=random_seed,
+    )
 
     results = []
     reports = []
     predictions_by_model = {}
     estimators_by_model = {}
 
-    for name, estimator in build_default_models().items():
+    for name, estimator in build_default_models(random_seed, n_jobs).items():
         result, predictions, fitted_estimator = evaluate_estimator(
-            name, estimator, X_train, X_test, y_train, y_test, cv, "default"
+            name, estimator, X_train, X_test, y_train, y_test, cv, n_jobs, "default"
         )
         results.append(result)
         predictions_by_model[name] = predictions
@@ -200,13 +199,13 @@ def main():
         reports.append(pd.DataFrame(report).transpose().assign(model=name))
         print(f"{name}: test_accuracy={result['test_accuracy']:.4f}")
 
-    for name, experiment in build_tuned_models().items():
+    for name, experiment in build_tuned_models(config).items():
         grid = GridSearchCV(
             experiment["pipeline"],
             experiment["params"],
             cv=cv,
-            scoring="accuracy",
-            n_jobs=-1,
+            scoring=config["primary_metric"],
+            n_jobs=n_jobs,
         )
         grid.fit(X_train, y_train)
         result, predictions, fitted_estimator = evaluate_estimator(
@@ -217,6 +216,7 @@ def main():
             y_train,
             y_test,
             cv,
+            n_jobs,
             "tuned",
             grid.best_params_,
         )
@@ -230,8 +230,11 @@ def main():
     results_df = pd.DataFrame(results).sort_values(
         by=["test_accuracy", "test_f1_macro"], ascending=False
     )
-    results_df.to_csv(RESULTS_PATH, index=False)
-    pd.concat(reports).to_csv(REPORTS_PATH)
+    results_path = output_path(config, "assignment7_baseline_results.csv")
+    reports_path = output_path(config, "assignment7_classification_reports.csv")
+    confusion_matrix_path = output_path(config, "assignment7_best_confusion_matrix.csv")
+    results_df.to_csv(results_path, index=False)
+    pd.concat(reports).to_csv(reports_path)
 
     best_model_name = results_df.iloc[0]["model"]
     best_estimator = estimators_by_model[best_model_name]
@@ -245,7 +248,7 @@ def main():
         index=best_estimator.named_steps["model"].classes_,
         columns=best_estimator.named_steps["model"].classes_,
     )
-    cm_df.to_csv(CONFUSION_MATRIX_PATH)
+    cm_df.to_csv(confusion_matrix_path)
 
     print("\nRanking by test accuracy:")
     print(
@@ -261,9 +264,10 @@ def main():
             ]
         ].to_string(index=False)
     )
-    print(f"\nSaved results to: {RESULTS_PATH}")
-    print(f"Saved classification reports to: {REPORTS_PATH}")
-    print(f"Saved best-model confusion matrix to: {CONFUSION_MATRIX_PATH}")
+    print(f"\nSaved results to: {results_path}")
+    print(f"Saved classification reports to: {reports_path}")
+    print(f"Saved best-model confusion matrix to: {confusion_matrix_path}")
+    print(f"Updated manifest: {write_experiment_manifest(config, 'baseline_models')}")
 
 
 if __name__ == "__main__":

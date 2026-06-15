@@ -1,13 +1,16 @@
+import argparse
 import os
-from pathlib import Path
 
 import librosa
 import numpy as np
 import pandas as pd
 
-from config import AUDIO_DATASET_PATH
-
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+from project_config import (
+    add_config_argument,
+    load_config,
+    project_path,
+    write_experiment_manifest,
+)
 
 FEATURES = ([
     "tempo",
@@ -62,18 +65,33 @@ def extract_features(file_path):
     return features
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="Extract audio features.")
+    add_config_argument(parser)
+    return parser.parse_args()
+
+
 def main():
+    args = parse_args()
+    config = load_config(args.config)
+    environment_variable = config["audio_dataset_environment_variable"]
+    audio_dataset_path = os.getenv(environment_variable)
+    if not audio_dataset_path:
+        raise EnvironmentError(
+            f"Set the {environment_variable} environment variable to the GTZAN directory."
+        )
+
     rows = []
 
-    for genre in os.listdir(AUDIO_DATASET_PATH):
-        genre_path = os.path.join(AUDIO_DATASET_PATH, genre)
+    for genre in sorted(os.listdir(audio_dataset_path)):
+        genre_path = os.path.join(audio_dataset_path, genre)
         if not os.path.isdir(genre_path):
             continue
 
         print(f"Processing genre: {genre}")
 
-        for file in os.listdir(genre_path):
-            if file.endswith(".wav"):
+        for file in sorted(os.listdir(genre_path)):
+            if file.lower().endswith(".wav"):
                 file_path = os.path.join(genre_path, file)
                 try:
                     feats = extract_features(file_path)
@@ -82,9 +100,21 @@ def main():
                 except Exception as e:
                     print(f"Error {file_path}: {e}")
 
+    if not rows:
+        raise RuntimeError("No audio features were extracted; the existing dataset was not changed.")
+
     df = pd.DataFrame(rows)
-    df.to_csv(PROJECT_ROOT / "data" / "features_extended.csv", index=False)
-    print("done!")
+    missing_columns = [column for column in FEATURES if column not in df.columns]
+    if missing_columns:
+        raise ValueError(f"Extracted dataset is missing features: {missing_columns}")
+
+    output_path = project_path(config["feature_file"])
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    temporary_path = output_path.with_suffix(".tmp")
+    df.to_csv(temporary_path, index=False)
+    temporary_path.replace(output_path)
+    print(f"Saved {len(df)} rows to: {output_path}")
+    print(f"Updated manifest: {write_experiment_manifest(config, 'feature_extraction')}")
 
 if __name__ == "__main__":
     main()

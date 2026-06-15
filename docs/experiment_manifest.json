@@ -1,0 +1,100 @@
+{
+  "runs": [
+    {
+      "stage": "baseline_models",
+      "timestamp_utc": "2026-06-15T19:26:52.472982+00:00",
+      "git_commit": "8f8c8a3fc368a939e469089ea56ea7d657f44a98",
+      "dirty_worktree": true,
+      "config_path": "D:\\nauka_programowania\\PythonProject\\experiment_config.json",
+      "config_sha256": "0e761dd07ebe40d470bae147b17bd241fe1d835c0cdba9ce46c4c498d1f57b8a",
+      "feature_file_sha256": "a44e733209b387091e6a0a2b66f4425548cd8b95da2ff813f73299c221b4d74a",
+      "python": "3.14.0",
+      "platform": "Windows-10-10.0.19045-SP0",
+      "packages": {
+        "librosa": "0.11.0",
+        "numpy": "2.3.5",
+        "pandas": "2.3.3",
+        "scikit-learn": "1.8.0"
+      },
+      "source_sha256": {
+        "src/project_config.py": "df6a1f50742f9f208b32238ec672adc021a3350b5534cdf49ad7274b8fc98494",
+        "src/extract_features.py": "ead38648e606e06ce0d584097a00409c889449d27c97885ba50ce8d582d16c1a",
+        "src/baseline_models.py": "a5dbcda037f81fc52f689fd5c99e728ecf3185360c49a46a0564f364846fc769",
+        "src/target_model.py": "c75ac90f783859397a80c7b352d6b420224b2c4d60f6a91410d6d74d09d2ca3d",
+        "src/results_analysis.py": "f8eb9f2cd0daffa08165c8cccd5bf113782e3f35e565b44802b503458a5fab0c"
+      }
+    },
+    {
+      "stage": "target_model",
+      "timestamp_utc": "2026-06-15T19:27:15.214379+00:00",
+      "git_commit": "8f8c8a3fc368a939e469089ea56ea7d657f44a98",
+      "dirty_worktree": true,
+      "config_path": "D:\\nauka_programowania\\PythonProject\\experiment_config.json",
+      "config_sha256": "0e761dd07ebe40d470bae147b17bd241fe1d835c0cdba9ce46c4c498d1f57b8a",
+      "feature_file_sha256": "a44e733209b387091e6a0a2b66f4425548cd8b95da2ff813f73299c221b4d74a",
+      "python": "3.14.0",
+      "platform": "Windows-10-10.0.19045-SP0",
+      "packages": {
+        "librosa": "0.11.0",
+        "numpy": "2.3.5",
+        "pandas": "2.3.3",
+        "scikit-learn": "1.8.0"
+      },
+      "source_sha256": {
+        "src/project_config.py": "df6a1f50742f9f208b32238ec672adc021a3350b5534cdf49ad7274b8fc98494",
+        "src/extract_features.py": "ead38648e606e06ce0d584097a00409c889449d27c97885ba50ce8d582d16c1a",
+        "src/baseline_models.py": "a5dbcda037f81fc52f689fd5c99e728ecf3185360c49a46a0564f364846fc769",
+        "src/target_model.py": "c75ac90f783859397a80c7b352d6b420224b2c4d60f6a91410d6d74d09d2ca3d",
+        "src/results_analysis.py": "f8eb9f2cd0daffa08165c8cccd5bf113782e3f35e565b44802b503458a5fab0c"
+      }
+    },
+    {
+      "stage": "results_analysis",
+      "timestamp_utc": "2026-06-15T19:27:30.055189+00:00",
+      "git_commit": "8f8c8a3fc368a939e469089ea56ea7d657f44a98",
+      "dirty_worktree": true,
+      "config_path": "D:\\nauka_programowania\\PythonProject\\experiment_config.json",
+      "config_sha256": "0e761dd07ebe40d470bae147b17bd241fe1d835c0cdba9ce46c4c498d1f57b8a",
+      "feature_file_sha256": "a44e733209b387091e6a0a2b66f4425548cd8b95da2ff813f73299c221b4d74a",
+      "python": "3.14.0",
+      "platform": "Windows-10-10.0.19045-SP0",
+      "packages": {
+        "librosa": "0.11.0",
+        "numpy": "2.3.5",
+        "pandas": "2.3.3",
+        "scikit-learn": "1.8.0"
+      },
+      "source_sha256": {
+        "src/project_config.py": "df6a1f50742f9f208b32238ec672adc021a3350b5534cdf49ad7274b8fc98494",
+        "src/extract_features.py": "ead38648e606e06ce0d584097a00409c889449d27c97885ba50ce8d582d16c1a",
+        "src/baseline_models.py": "a5dbcda037f81fc52f689fd5c99e728ecf3185360c49a46a0564f364846fc769",
+        "src/target_model.py": "c75ac90f783859397a80c7b352d6b420224b2c4d60f6a91410d6d74d09d2ca3d",
+        "src/results_analysis.py": "f8eb9f2cd0daffa08165c8cccd5bf113782e3f35e565b44802b503458a5fab0c"
+      }
+    },
+    {
+      "stage": "results_analysis",
+      "timestamp_utc": "2026-06-15T19:33:10.034596+00:00",
+      "git_commit": "8f8c8a3fc368a939e469089ea56ea7d657f44a98",
+      "dirty_worktree": true,
+      "config_path": "D:\\nauka_programowania\\PythonProject\\experiment_config.json",
+      "config_sha256": "0e761dd07ebe40d470bae147b17bd241fe1d835c0cdba9ce46c4c498d1f57b8a",
+      "feature_file_sha256": "a44e733209b387091e6a0a2b66f4425548cd8b95da2ff813f73299c221b4d74a",
+      "python": "3.14.0",
+      "platform": "Windows-10-10.0.19045-SP0",
+      "packages": {
+        "librosa": "0.11.0",
+        "numpy": "2.3.5",
+        "pandas": "2.3.3",
+        "scikit-learn": "1.8.0"
+      },
+      "source_sha256": {
+        "src/project_config.py": "df6a1f50742f9f208b32238ec672adc021a3350b5534cdf49ad7274b8fc98494",
+        "src/extract_features.py": "d505fae37117231d1ac7e3480bdeb285553795742b5722ecb661c39298b2c7d8",
+        "src/baseline_models.py": "a5dbcda037f81fc52f689fd5c99e728ecf3185360c49a46a0564f364846fc769",
+        "src/target_model.py": "c75ac90f783859397a80c7b352d6b420224b2c4d60f6a91410d6d74d09d2ca3d",
+        "src/results_analysis.py": "f8eb9f2cd0daffa08165c8cccd5bf113782e3f35e565b44802b503458a5fab0c"
+      }
+    }
+  ]
+}

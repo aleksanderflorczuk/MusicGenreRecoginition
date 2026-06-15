@@ -1,4 +1,4 @@
-from pathlib import Path
+import argparse
 from time import perf_counter
 
 import pandas as pd
@@ -18,21 +18,13 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 
-
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DATA_PATH = PROJECT_ROOT / "data" / "features_extended.csv"
-DOCS_DIR = PROJECT_ROOT / "docs"
-
-TARGET_RESULTS_PATH = DOCS_DIR / "assignment8_target_results.csv"
-COMPARATIVE_RESULTS_PATH = DOCS_DIR / "assignment8_comparative_results.csv"
-OPTIMIZATION_RESULTS_PATH = DOCS_DIR / "assignment8_optimization_results.csv"
-LEARNING_CURVE_PATH = DOCS_DIR / "assignment8_learning_curve.csv"
-CLASSIFICATION_REPORT_PATH = DOCS_DIR / "assignment8_classification_report.csv"
-CONFUSION_MATRIX_PATH = DOCS_DIR / "assignment8_best_confusion_matrix.csv"
-
-RANDOM_STATE = 30
-TEST_SIZE = 0.2
-CV_SPLITS = 5
+from project_config import (
+    add_config_argument,
+    load_clean_dataset,
+    load_config,
+    output_path,
+    write_experiment_manifest,
+)
 
 SCORING = {
     "accuracy": "accuracy",
@@ -42,58 +34,51 @@ SCORING = {
 }
 
 
-def load_dataset():
-    df = pd.read_csv(DATA_PATH)
-
-    duplicate_count = int(df.duplicated().sum())
-    if duplicate_count:
-        df = df.drop_duplicates().reset_index(drop=True)
-
-    missing_count = int(df.isna().sum().sum())
-    if missing_count:
-        raise ValueError(f"Dataset contains missing values: {missing_count}")
-
-    X = df.drop(columns="genre")
-    y = df["genre"]
-    return X, y, duplicate_count
+def parse_args():
+    parser = argparse.ArgumentParser(description="Run target model experiments.")
+    add_config_argument(parser)
+    return parser.parse_args()
 
 
-def build_target_experiments():
+def build_target_experiments(config):
+    target = config["target_model"]
+    svm_parameters = {
+        "model__C": target["C"],
+        "model__gamma": target["gamma"],
+    }
     return {
         "svm_rbf_all_features": {
             "pipeline": Pipeline(
                 [
                     ("scaler", StandardScaler()),
-                    ("model", SVC(kernel="rbf")),
+                    ("model", SVC(kernel=target["kernel"])),
                 ]
             ),
-            "params": {
-                "model__C": [1, 3, 10, 30, 100],
-                "model__gamma": ["scale", 0.03, 0.01, 0.003, 0.001],
-            },
+            "params": svm_parameters,
         },
         "svm_rbf_select_k_best": {
             "pipeline": Pipeline(
                 [
                     ("scaler", StandardScaler()),
                     ("selector", SelectKBest(score_func=f_classif)),
-                    ("model", SVC(kernel="rbf")),
+                    ("model", SVC(kernel=target["kernel"])),
                 ]
             ),
             "params": {
-                "selector__k": [20, 30, 40, 50, "all"],
-                "model__C": [1, 3, 10, 30, 100],
-                "model__gamma": ["scale", 0.03, 0.01, 0.003, 0.001],
+                "selector__k": target["feature_selection_k"],
+                **svm_parameters,
             },
         },
     }
 
 
-def evaluate_baseline_reference(X_train, X_test, y_train, y_test, cv):
+def evaluate_baseline_reference(config, X_train, X_test, y_train, y_test, cv):
+    random_seed = config["random_seed"]
+    n_jobs = config["n_jobs"]
     baseline = Pipeline(
         [
             ("scaler", StandardScaler()),
-            ("model", RandomForestClassifier(random_state=RANDOM_STATE, n_jobs=-1)),
+            ("model", RandomForestClassifier(random_state=random_seed, n_jobs=n_jobs)),
         ]
     )
 
@@ -102,8 +87,8 @@ def evaluate_baseline_reference(X_train, X_test, y_train, y_test, cv):
         baseline,
         param_grid={},
         cv=cv,
-        scoring="accuracy",
-        n_jobs=-1,
+        scoring=config["primary_metric"],
+        n_jobs=n_jobs,
         return_train_score=True,
     )
     cv_scores.fit(X_train, y_train)
@@ -174,15 +159,15 @@ def evaluate_best_model(name, grid, X_train, X_test, y_train, y_test):
     }, predictions
 
 
-def save_learning_curve(estimator, X_train, y_train, cv):
+def save_learning_curve(config, estimator, X_train, y_train, cv, learning_curve_path):
     train_sizes, train_scores, validation_scores = learning_curve(
         estimator,
         X_train,
         y_train,
         train_sizes=[0.2, 0.4, 0.6, 0.8, 1.0],
         cv=cv,
-        scoring="accuracy",
-        n_jobs=-1,
+        scoring=config["primary_metric"],
+        n_jobs=config["n_jobs"],
     )
 
     curve = pd.DataFrame(
@@ -195,36 +180,44 @@ def save_learning_curve(estimator, X_train, y_train, cv):
         }
     )
     curve["generalization_gap"] = curve["train_accuracy_mean"] - curve["validation_accuracy_mean"]
-    curve.to_csv(LEARNING_CURVE_PATH, index=False)
+    curve.to_csv(learning_curve_path, index=False)
 
 
 def main():
-    X, y, duplicate_count = load_dataset()
+    args = parse_args()
+    config = load_config(args.config)
+    random_seed = config["random_seed"]
+    n_jobs = config["n_jobs"]
+    X, y, duplicate_count = load_clean_dataset(config)
     print(f"Dataset after duplicate removal: {X.shape[0]} rows, {X.shape[1]} features")
     print(f"Removed exact duplicate rows: {duplicate_count}")
 
     X_train, X_test, y_train, y_test = train_test_split(
         X,
         y,
-        test_size=TEST_SIZE,
+        test_size=config["test_size"],
         stratify=y,
-        random_state=RANDOM_STATE,
+        random_state=random_seed,
     )
-    cv = StratifiedKFold(n_splits=CV_SPLITS, shuffle=True, random_state=RANDOM_STATE)
+    cv = StratifiedKFold(
+        n_splits=config["cv_splits"],
+        shuffle=True,
+        random_state=random_seed,
+    )
 
     target_results = []
     optimization_rows = []
     predictions_by_model = {}
     grids = {}
 
-    for name, experiment in build_target_experiments().items():
+    for name, experiment in build_target_experiments(config).items():
         print(f"\nRunning target experiment: {name}")
         grid = GridSearchCV(
             experiment["pipeline"],
             experiment["params"],
             cv=cv,
-            scoring="accuracy",
-            n_jobs=-1,
+            scoring=config["primary_metric"],
+            n_jobs=n_jobs,
             return_train_score=True,
         )
         grid.estimator_name = name
@@ -245,9 +238,17 @@ def main():
     results_df = pd.DataFrame(target_results).sort_values(
         by=["test_accuracy", "test_f1_macro"], ascending=False
     )
-    results_df.to_csv(TARGET_RESULTS_PATH, index=False)
+    target_results_path = output_path(config, "assignment8_target_results.csv")
+    comparative_results_path = output_path(config, "assignment8_comparative_results.csv")
+    optimization_results_path = output_path(config, "assignment8_optimization_results.csv")
+    learning_curve_path = output_path(config, "assignment8_learning_curve.csv")
+    classification_report_path = output_path(config, "assignment8_classification_report.csv")
+    confusion_matrix_path = output_path(config, "assignment8_best_confusion_matrix.csv")
+    results_df.to_csv(target_results_path, index=False)
 
-    baseline_reference = evaluate_baseline_reference(X_train, X_test, y_train, y_test, cv)
+    baseline_reference = evaluate_baseline_reference(
+        config, X_train, X_test, y_train, y_test, cv
+    )
     best_target = results_df.iloc[0].to_dict()
     comparative_df = pd.DataFrame(
         [
@@ -285,22 +286,29 @@ def main():
     comparative_df["relative_f1_improvement_vs_baseline"] = (
         comparative_df["absolute_f1_improvement_vs_baseline"] / baseline_f1
     )
-    comparative_df.to_csv(COMPARATIVE_RESULTS_PATH, index=False)
+    comparative_df.to_csv(comparative_results_path, index=False)
     pd.DataFrame(optimization_rows).sort_values(
         by=["experiment", "rank_validation_accuracy", "generalization_gap"]
-    ).to_csv(OPTIMIZATION_RESULTS_PATH, index=False)
+    ).to_csv(optimization_results_path, index=False)
 
     best_model_name = results_df.iloc[0]["model"]
     best_grid = grids[best_model_name]
     best_predictions = predictions_by_model[best_model_name]
 
     report = classification_report(y_test, best_predictions, output_dict=True, zero_division=0)
-    pd.DataFrame(report).transpose().to_csv(CLASSIFICATION_REPORT_PATH)
+    pd.DataFrame(report).transpose().to_csv(classification_report_path)
 
     labels = best_grid.best_estimator_.named_steps["model"].classes_
     cm = confusion_matrix(y_test, best_predictions, labels=labels)
-    pd.DataFrame(cm, index=labels, columns=labels).to_csv(CONFUSION_MATRIX_PATH)
-    save_learning_curve(best_grid.best_estimator_, X_train, y_train, cv)
+    pd.DataFrame(cm, index=labels, columns=labels).to_csv(confusion_matrix_path)
+    save_learning_curve(
+        config,
+        best_grid.best_estimator_,
+        X_train,
+        y_train,
+        cv,
+        learning_curve_path,
+    )
 
     print("\nRanking by test accuracy:")
     print(
@@ -318,12 +326,13 @@ def main():
             ]
         ].to_string(index=False)
     )
-    print(f"\nSaved target results to: {TARGET_RESULTS_PATH}")
-    print(f"Saved comparative results to: {COMPARATIVE_RESULTS_PATH}")
-    print(f"Saved optimization results to: {OPTIMIZATION_RESULTS_PATH}")
-    print(f"Saved learning curve to: {LEARNING_CURVE_PATH}")
-    print(f"Saved classification report to: {CLASSIFICATION_REPORT_PATH}")
-    print(f"Saved confusion matrix to: {CONFUSION_MATRIX_PATH}")
+    print(f"\nSaved target results to: {target_results_path}")
+    print(f"Saved comparative results to: {comparative_results_path}")
+    print(f"Saved optimization results to: {optimization_results_path}")
+    print(f"Saved learning curve to: {learning_curve_path}")
+    print(f"Saved classification report to: {classification_report_path}")
+    print(f"Saved confusion matrix to: {confusion_matrix_path}")
+    print(f"Updated manifest: {write_experiment_manifest(config, 'target_model')}")
 
 
 if __name__ == "__main__":
